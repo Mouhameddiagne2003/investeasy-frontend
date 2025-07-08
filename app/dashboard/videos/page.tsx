@@ -2,66 +2,94 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Play, Eye } from "lucide-react";
+import { Clock, Play, Eye, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { getVideos, getCategories, likeVideo, viewVideo } from "@/lib/api/video";
+import { useAuth } from "@/context/AuthContext";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const Videos = () => {
-  const videos = [
-    {
-      id: 1,
-      title: "Introduction à l'investissement",
-      description: "Découvrez les concepts de base de l'investissement et pourquoi il est important de commencer tôt.",
-      duration: "15:30",
-      views: "2.3k",
-      category: "Débutant",
-      thumbnail: "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
-      embedId: "dQw4w9WgXcQ",
-      level: "Débutant"
-    },
-    {
-      id: 2,
-      title: "Les types de placements au Sénégal",
-      description: "Explorez les différentes options d'investissement disponibles pour les investisseurs sénégalais.",
-      duration: "22:45",
-      views: "1.8k",
-      category: "Intermédiaire",
-      thumbnail: "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
-      embedId: "dQw4w9WgXcQ",
-      level: "Intermédiaire"
-    },
-    {
-      id: 3,
-      title: "Gestion des risques financiers",
-      description: "Apprenez à évaluer et gérer les risques dans vos investissements pour protéger votre capital.",
-      duration: "18:20",
-      views: "1.5k",
-      category: "Intermédiaire",
-      thumbnail: "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
-      embedId: "dQw4w9WgXcQ",
-      level: "Intermédiaire"
-    },
-    {
-      id: 4,
-      title: "Planification de la retraite",
-      description: "Stratégies pour préparer votre retraite grâce à des investissements à long terme.",
-      duration: "25:10",
-      views: "2.1k",
-      category: "Avancé",
-      thumbnail: "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
-      embedId: "dQw4w9WgXcQ",
-      level: "Avancé"
-    },
-    {
-      id: 5,
-      title: "Investir dans l'immobilier sénégalais",
-      description: "Guide complet pour investir dans l'immobilier au Sénégal : opportunités et défis.",
-      duration: "28:45",
-      views: "3.2k",
-      category: "Avancé",
-      thumbnail: "https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
-      embedId: "dQw4w9WgXcQ",
-      level: "Avancé"
-    }
-  ];
+  const { isAuthenticated } = useAuth();
+  const [videos, setVideos] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("");
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<any>(null);
+  const [likeLoading, setLikeLoading] = useState<string | null>(null);
+  const [viewLoading, setViewLoading] = useState<string | null>(null);
+  const [likedVideos, setLikedVideos] = useState<{ [id: string]: boolean }>({});
+  const [selectedVideo, setSelectedVideo] = useState<any | null>(null);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const token = localStorage.getItem('investeasy-token') || undefined;
+        const data = await getCategories(token);
+        setCategories(data.categories || []);
+      } catch {}
+    };
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
+    const fetchVideos = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const token = localStorage.getItem('investeasy-token') || undefined;
+        const data = await getVideos({ page, search, category }, token);
+        setVideos(data.videos || []);
+        setPagination(data.pagination || null);
+      } catch (err: any) {
+        setError(err.message || 'Erreur lors du chargement des vidéos');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchVideos();
+  }, [page, search, category]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPage(1);
+  };
+
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setCategory(e.target.value);
+    setPage(1);
+  };
+
+  const handleLike = async (videoId: string) => {
+    const token = localStorage.getItem('investeasy-token') || '';
+    if (!token) return;
+    setLikeLoading(videoId);
+    try {
+      const res = await likeVideo(videoId, token);
+      setVideos((prev) => prev.map((v) => v.id === videoId ? { ...v, likes: res.likes } : v));
+      setLikedVideos((prev) => ({ ...prev, [videoId]: res.isLiked }));
+    } catch {}
+    setLikeLoading(null);
+  };
+
+  const handleView = async (videoId: string) => {
+    const token = localStorage.getItem('investeasy-token') || '';
+    setViewLoading(videoId);
+    try {
+      const res = await viewVideo(videoId, token);
+      setVideos((prev) => prev.map((v) => v.id === videoId ? { ...v, views: res.views } : v));
+    } catch {}
+    setViewLoading(null);
+  };
+
+  const openVideoModal = (video: any) => {
+    setSelectedVideo(video);
+    handleView(video.id);
+  };
+
+  const closeVideoModal = () => setSelectedVideo(null);
 
   const getLevelColor = (level: string) => {
     switch (level) {
@@ -86,76 +114,174 @@ const Videos = () => {
           créées spécialement pour les investisseurs sénégalais.
         </p>
       </div>
+      {/* Search & Filter */}
+      <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 mb-8 items-center justify-center">
+        <input
+          type="text"
+          placeholder="Rechercher une vidéo..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="border rounded-md px-4 py-2 w-full md:w-64"
+        />
+        <select
+          value={category}
+          onChange={handleCategoryChange}
+          className="border rounded-md px-4 py-2 w-full md:w-48"
+        >
+          <option value="">Toutes les catégories</option>
+          {categories.map((cat: any) => (
+            <option key={cat.id} value={cat.name}>{cat.name}</option>
+          ))}
+        </select>
+        <button type="submit" className="bg-primary text-primary-foreground px-6 py-2 rounded-md">Rechercher</button>
+      </form>
       {/* Videos Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {videos.map((video) => (
-          <Card key={video.id} className="group hover:shadow-xl transition-all duration-300 overflow-hidden">
-            <div className="relative">
-              <div className="aspect-video bg-muted rounded-t-lg overflow-hidden">
+      {loading ? (
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="animate-spin h-8 w-8 text-primary" />
+        </div>
+      ) : error ? (
+        <div className="text-center text-red-500 py-8">{error}</div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {videos.map((video) => (
+              <Card key={video.id} className="group hover:shadow-xl transition-all duration-300 overflow-hidden">
+                <div className="relative">
+                  <div className="aspect-video bg-muted rounded-t-lg overflow-hidden">
+                    <iframe
+                      src={video.url?.includes('youtube.com') ? video.url.replace('/watch?v=', '/embed/') : video.url}
+                      title={video.title}
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="w-full h-full"
+                    />
+                  </div>
+                  <div className="absolute top-4 left-4">
+                    <Badge className={getLevelColor(video.category || video.level)}>
+                      {video.category || video.level}
+                    </Badge>
+                  </div>
+                </div>
+                <CardHeader>
+                  <CardTitle className="group-hover:text-primary transition-colors">
+                    {video.title}
+                  </CardTitle>
+                  <CardDescription>
+                    {video.description}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-1" />
+                        {video.duration ? `${video.duration} min` : '--'}
+                      </div>
+                      <div className="flex items-center">
+                        <Eye className="h-4 w-4 mr-1" />
+                        {video.views} vues
+                      </div>
+                      <button
+                        className={`flex items-center gap-1 px-2 py-1 rounded-md border ${likedVideos[video.id] ? 'bg-primary text-primary-foreground' : ''}`}
+                        disabled={likeLoading === video.id || !isAuthenticated}
+                        onClick={() => handleLike(video.id)}
+                      >
+                        {likeLoading === video.id ? (
+                          <Loader2 className="animate-spin h-4 w-4" />
+                        ) : (
+                          <>
+                            <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" /></svg>
+                            {video.likes || 0}
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <button
+                      className="flex items-center text-primary px-2 py-1 border rounded-md"
+                      disabled={viewLoading === video.id}
+                      onClick={() => openVideoModal(video)}
+                    >
+                      {viewLoading === video.id ? (
+                        <Loader2 className="animate-spin h-4 w-4 mr-1" />
+                      ) : (
+                        <Play className="h-4 w-4 mr-1" />
+                      )}
+                      Regarder
+                    </button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          {/* Pagination */}
+          {pagination && (
+            <div className="flex justify-center items-center gap-4 mt-8">
+              <button
+                className="px-4 py-2 rounded-md border disabled:opacity-50"
+                onClick={() => setPage(page - 1)}
+                disabled={page <= 1}
+              >
+                Précédent
+              </button>
+              <span>Page {pagination.currentPage} / {pagination.totalPages}</span>
+              <button
+                className="px-4 py-2 rounded-md border disabled:opacity-50"
+                onClick={() => setPage(page + 1)}
+                disabled={!pagination.hasNext}
+              >
+                Suivant
+              </button>
+            </div>
+          )}
+        </>
+      )}
+      {/* Video Modal */}
+      <Dialog open={!!selectedVideo} onOpenChange={closeVideoModal}>
+        <DialogContent className="max-w-3xl w-full p-0 overflow-hidden">
+          {selectedVideo && (
+            <div className="flex flex-col md:flex-row">
+              <div className="flex-1 bg-black aspect-video relative">
                 <iframe
-                  src={`https://www.youtube.com/embed/${video.embedId}`}
-                  title={video.title}
+                  src={selectedVideo.url?.includes('youtube.com') ? selectedVideo.url.replace('/watch?v=', '/embed/') : selectedVideo.url}
+                  title={selectedVideo.title}
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
-                  className="w-full h-full"
+                  className="w-full h-full min-h-[240px] md:min-h-[360px]"
                 />
               </div>
-              <div className="absolute top-4 left-4">
-                <Badge className={getLevelColor(video.level)}>
-                  {video.level}
-                </Badge>
+              <div className="flex-1 p-6 flex flex-col gap-4 min-w-[280px]">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold mb-2">{selectedVideo.title}</DialogTitle>
+                </DialogHeader>
+                <div className="text-muted-foreground mb-2 text-base">{selectedVideo.description}</div>
+                <div className="flex flex-wrap items-center gap-4 text-sm mb-2">
+                  <span className="flex items-center"><Eye className="h-4 w-4 mr-1" />{selectedVideo.views} vues</span>
+                  <span className="flex items-center"><svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" /></svg>{selectedVideo.likes || 0} likes</span>
+                  <span className="flex items-center"><Clock className="h-4 w-4 mr-1" />{selectedVideo.duration ? `${selectedVideo.duration} min` : '--'}</span>
+                  <Badge className={getLevelColor(selectedVideo.category || selectedVideo.level)}>{selectedVideo.category || selectedVideo.level}</Badge>
+                </div>
+                <button
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md border w-fit ${likedVideos[selectedVideo.id] ? 'bg-primary text-primary-foreground' : ''}`}
+                  disabled={likeLoading === selectedVideo.id || !isAuthenticated}
+                  onClick={() => handleLike(selectedVideo.id)}
+                >
+                  {likeLoading === selectedVideo.id ? (
+                    <Loader2 className="animate-spin h-4 w-4" />
+                  ) : (
+                    <>
+                      <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" /></svg>
+                      {likedVideos[selectedVideo.id] ? 'Retirer le like' : 'Aimer'}
+                    </>
+                  )}
+                </button>
               </div>
             </div>
-            <CardHeader>
-              <CardTitle className="group-hover:text-primary transition-colors">
-                {video.title}
-              </CardTitle>
-              <CardDescription>
-                {video.description}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center">
-                    <Clock className="h-4 w-4 mr-1" />
-                    {video.duration}
-                  </div>
-                  <div className="flex items-center">
-                    <Eye className="h-4 w-4 mr-1" />
-                    {video.views} vues
-                  </div>
-                </div>
-                <div className="flex items-center text-primary">
-                  <Play className="h-4 w-4 mr-1" />
-                  Regarder
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      {/* Call to Action */}
-      <div className="mt-16 text-center">
-        <Card className="bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20">
-          <CardContent className="p-8">
-            <h3 className="text-2xl font-bold mb-4">Vous voulez plus de contenu ?</h3>
-            <p className="text-muted-foreground mb-6">
-              Inscrivez-vous pour accéder à notre bibliothèque complète de ressources éducatives 
-              et recevoir des recommandations personnalisées.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-2 rounded-md transition-colors">
-                Créer un compte gratuit
-              </button>
-              <button className="border border-primary text-primary hover:bg-primary hover:text-primary-foreground px-6 py-2 rounded-md transition-colors">
-                Explorer les recommandations
-              </button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

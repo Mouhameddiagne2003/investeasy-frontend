@@ -29,10 +29,9 @@ import {
   Bell,
   Globe
 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 const AdminSettings = () => {
-  const { toast } = useToast();
 
   // États pour les différentes sections de paramètres
   const [generalSettings, setGeneralSettings] = useState({
@@ -84,10 +83,7 @@ const AdminSettings = () => {
   });
 
   const handleSaveSection = (section: string) => {
-    toast({
-      title: 'Paramètres sauvegardés',
-      description: `Les paramètres de ${section} ont été sauvegardés avec succès.`,
-    });
+    toast.success(`Les paramètres de ${section} ont été sauvegardés avec succès.`);
   };
 
   return (

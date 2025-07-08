@@ -7,16 +7,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/context/AuthContext";
-import { toast } from "@/hooks/use-toast";
-import { MessageCircle, Send, Clock } from "lucide-react";
+import { toast } from "sonner";
+import { MessageCircle, Send, Clock, Loader2 } from "lucide-react";
+import { getComments, createComment, likeComment, updateComment, deleteComment, getReplies } from "@/lib/api/comment";
+import { User } from "@/types/user";
 
 interface Comment {
-  id: number;
-  user_id: string;
-  author: string;
+  id: string;
+  userId: string;
+  user: User;
   text: string;
-  date: string;
+  createdAt: string;
   likes: number;
+  isLiked?: boolean;
 }
 
 const Forum = () => {
@@ -24,96 +27,69 @@ const Forum = () => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
+  const [likeLoading, setLikeLoading] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<any>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [replyingId, setReplyingId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [replyLoading, setReplyLoading] = useState(false);
+  const [replies, setReplies] = useState<{ [parentId: string]: any[] }>({});
+  const [repliesLoading, setRepliesLoading] = useState<string | null>(null);
 
   useEffect(() => {
-    const mockComments: Comment[] = [
-      {
-        id: 1,
-        user_id: "user1",
-        author: "Amadou Diallo",
-        text: "Excellente plateforme ! J'ai appris énormément grâce aux vidéos sur les investissements. Les recommandations sont très pertinentes pour le contexte sénégalais.",
-        date: "2024-06-10T14:30:00Z",
-        likes: 12
-      },
-      {
-        id: 2,
-        user_id: "user2",
-        author: "Fatou Seck",
-        text: "Je recommande vivement InvestEasy à tous ceux qui veulent commencer à investir. L'interface est intuitive et les conseils sont adaptés à notre marché local.",
-        date: "2024-06-09T09:15:00Z",
-        likes: 8
-      },
-      {
-        id: 3,
-        user_id: "user3",
-        author: "Omar Ba",
-        text: "Grâce aux recommandations, j'ai pu diversifier mon portefeuille. Maintenant je comprends mieux les risques et les opportunités du marché sénégalais.",
-        date: "2024-06-08T16:45:00Z",
-        likes: 15
-      },
-      {
-        id: 4,
-        user_id: "user4",
-        author: "Aissatou Diop",
-        text: "Les vidéos sur la planification de la retraite m'ont ouvert les yeux. Il n'est jamais trop tôt pour commencer à épargner pour l'avenir !",
-        date: "2024-06-07T11:20:00Z",
-        likes: 6
-      },
-      {
-        id: 5,
-        user_id: "user5",
-        author: "Moussa Ndiaye",
-        text: "Très bonne initiative ! Cette plateforme démocratise vraiment l'accès à l'information financière. Continuez comme ça !",
-        date: "2024-06-06T13:55:00Z",
-        likes: 10
+    const fetchComments = async () => {
+      setFetching(true);
+      try {
+        const token = localStorage.getItem('investeasy-token') || undefined;
+        const data = await getComments({ page, limit: 10 }, token);
+        setComments(data.comments || []);
+        setPagination(data.pagination || null);
+      } catch (err: any) {
+        toast.error(err.message || 'Erreur lors du chargement des commentaires');
+      } finally {
+        setFetching(false);
       }
-    ];
-    setComments(mockComments);
-  }, []);
+    };
+    fetchComments();
+  }, [page]);
 
   const handleSubmitComment = async () => {
     if (!newComment.trim()) {
-      toast({
-        title: "Commentaire vide",
-        description: "Veuillez écrire votre commentaire avant de l'envoyer",
-        variant: "destructive",
-      });
+      toast.error("Veuillez écrire votre commentaire avant de l'envoyer");
       return;
     }
     if (newComment.length > 500) {
-      toast({
-        title: "Commentaire trop long",
-        description: "Le commentaire ne peut pas dépasser 500 caractères",
-        variant: "destructive",
-      });
+      toast.error("Le commentaire ne peut pas dépasser 500 caractères");
       return;
     }
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const newCommentObj: Comment = {
-        id: comments.length + 1,
-        user_id: user?.id || "current-user",
-        author: user?.email || "Utilisateur",
-        text: newComment,
-        date: new Date().toISOString(),
-        likes: 0
-      };
-      setComments([newCommentObj, ...comments]);
+      const token = localStorage.getItem('investeasy-token') || '';
+      const res = await createComment({ text: newComment }, token);
+      setComments([res, ...comments]);
       setNewComment("");
-      toast({
-        title: "Commentaire publié",
-        description: "Votre commentaire a été ajouté avec succès",
-      });
-    } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de publier le commentaire",
-        variant: "destructive",
-      });
+      toast.success("Votre commentaire a été ajouté avec succès");
+    } catch (error: any) {
+      toast.error(error.message || "Impossible de publier le commentaire");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLike = async (commentId: string) => {
+    const token = localStorage.getItem('investeasy-token') || '';
+    if (!token) return;
+    setLikeLoading(commentId);
+    try {
+      const res = await likeComment(commentId, token);
+      setComments((prev) => prev.map((c) => c.id === commentId ? { ...c, likes: res.likes, isLiked: res.isLiked } : c));
+    } catch {}
+    setLikeLoading(null);
   };
 
   const formatDate = (dateString: string) => {
@@ -127,13 +103,84 @@ const Forum = () => {
     });
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
+  const getInitials = (user: User) => {
+    return user.email.charAt(0).toUpperCase();
+  };
+
+  const handleEdit = (comment: Comment) => {
+    setEditingId(comment.id);
+    setEditText(comment.text);
+  };
+
+  const handleEditSubmit = async (commentId: string) => {
+    if (!editText.trim()) {
+      toast.error("Le commentaire ne peut pas être vide");
+      return;
+    }
+    setEditLoading(true);
+    try {
+      const token = localStorage.getItem('investeasy-token') || '';
+      const res = await updateComment(commentId, { text: editText }, token);
+      setComments((prev) => prev.map((c) => c.id === commentId ? { ...c, text: res.text } : c));
+      setEditingId(null);
+      setEditText("");
+      toast.success("Commentaire modifié");
+    } catch (error: any) {
+      toast.error(error.message || "Erreur lors de la modification");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const handleDelete = async (commentId: string) => {
+    if (!window.confirm("Supprimer ce commentaire ?")) return;
+    setDeleteLoading(commentId);
+    try {
+      const token = localStorage.getItem('investeasy-token') || '';
+      await deleteComment(commentId, token);
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+      toast.success("Commentaire supprimé");
+    } catch (error: any) {
+      toast.error(error.message || "Erreur lors de la suppression");
+    } finally {
+      setDeleteLoading(null);
+    }
+  };
+
+  const handleReply = (commentId: string) => {
+    setReplyingId(commentId);
+    setReplyText("");
+    if (!replies[commentId]) fetchReplies(commentId);
+  };
+
+  const handleReplySubmit = async (parentId: string) => {
+    if (!replyText.trim()) {
+      toast.error("La réponse ne peut pas être vide");
+      return;
+    }
+    setReplyLoading(true);
+    try {
+      const token = localStorage.getItem('investeasy-token') || '';
+      const res = await createComment({ text: replyText, parentId }, token);
+      setReplies((prev) => ({ ...prev, [parentId]: [res, ...(prev[parentId] || [])] }));
+      setReplyText("");
+      setReplyingId(null);
+      toast.success("Réponse ajoutée");
+    } catch (error: any) {
+      toast.error(error.message || "Erreur lors de la réponse");
+    } finally {
+      setReplyLoading(false);
+    }
+  };
+
+  const fetchReplies = async (parentId: string) => {
+    setRepliesLoading(parentId);
+    try {
+      const token = localStorage.getItem('investeasy-token') || undefined;
+      const data = await getReplies(parentId, {}, token);
+      setReplies((prev) => ({ ...prev, [parentId]: data.replies || [] }));
+    } catch {}
+    setRepliesLoading(null);
   };
 
   return (
@@ -212,53 +259,135 @@ const Forum = () => {
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-semibold">Discussions récentes</h2>
             <Badge variant="secondary">
-              {comments.length} commentaire{comments.length > 1 ? 's' : ''}
+              {pagination?.totalItems || 0} commentaire{(pagination?.totalItems || 0) > 1 ? 's' : ''}
             </Badge>
           </div>
-          <ScrollArea className="h-[600px] pr-4">
-            <div className="space-y-4">
-              {comments.map((comment) => (
-                <Card key={comment.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-start space-x-4">
-                      {/* Avatar */}
-                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-sm font-medium text-primary">
-                          {getInitials(comment.author)}
-                        </span>
-                      </div>
-                      {/* Content */}
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <span className="font-medium">{comment.author}</span>
-                            <Badge variant="outline" className="text-xs">
-                              Membre
-                            </Badge>
-                          </div>
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {formatDate(comment.date)}
-                          </div>
+          {fetching ? (
+            <div className="flex justify-center items-center py-8"><Loader2 className="animate-spin h-6 w-6 text-primary" /></div>
+          ) : (
+            <ScrollArea className="h-[600px] pr-4">
+              <div className="space-y-4">
+                {comments.map((comment) => (
+                  <Card key={comment.id} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-start space-x-4">
+                        {/* Avatar */}
+                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm font-medium text-primary">
+                            {getInitials(comment.user)}
+                          </span>
                         </div>
-                        <p className="text-muted-foreground leading-relaxed">
-                          {comment.text}
-                        </p>
-                        <div className="flex items-center space-x-4 pt-2">
-                          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
-                            👍 {comment.likes}
-                          </Button>
-                          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
-                            Répondre
-                          </Button>
+                        {/* Content */}
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <span className="font-medium">{comment.user.email}</span>
+                              <Badge variant="outline" className="text-xs">
+                                Membre
+                              </Badge>
+                            </div>
+                            <div className="flex items-center text-sm text-muted-foreground gap-2">
+                              <Clock className="h-3 w-3 mr-1" />
+                              {formatDate(comment.createdAt)}
+                              {user?.id === comment.userId && (
+                                <>
+                                  <Button variant="ghost" size="icon" className="text-xs" onClick={() => handleEdit(comment)} disabled={editLoading || deleteLoading === comment.id} title="Éditer">
+                                    ✏️
+                                  </Button>
+                                  <Button variant="ghost" size="icon" className="text-xs" onClick={() => handleDelete(comment.id)} disabled={deleteLoading === comment.id} title="Supprimer">
+                                    {deleteLoading === comment.id ? <Loader2 className="animate-spin h-4 w-4" /> : '🗑️'}
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          {editingId === comment.id ? (
+                            <div className="flex flex-col gap-2">
+                              <Textarea value={editText} onChange={e => setEditText(e.target.value)} maxLength={500} />
+                              <div className="flex gap-2">
+                                <Button size="sm" onClick={() => handleEditSubmit(comment.id)} disabled={editLoading}>{editLoading ? <Loader2 className="animate-spin h-4 w-4" /> : 'Valider'}</Button>
+                                <Button size="sm" variant="outline" onClick={() => setEditingId(null)} disabled={editLoading}>Annuler</Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-muted-foreground leading-relaxed">
+                              {comment.text}
+                            </p>
+                          )}
+                          <div className="flex items-center space-x-4 pt-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className={`text-muted-foreground hover:text-primary flex items-center gap-1 ${comment.isLiked ? 'text-primary' : ''}`}
+                              disabled={likeLoading === comment.id || !isAuthenticated}
+                              onClick={() => handleLike(comment.id)}
+                            >
+                              {likeLoading === comment.id ? <Loader2 className="animate-spin h-4 w-4" /> : '👍'} {comment.likes}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-muted-foreground hover:text-primary"
+                              onClick={() => handleReply(comment.id)}
+                              disabled={replyLoading || !isAuthenticated}
+                            >
+                              Répondre
+                            </Button>
+                          </div>
+                          {/* Zone de réponse */}
+                          {replyingId === comment.id && (
+                            <div className="mt-2 flex flex-col gap-2">
+                              <Textarea value={replyText} onChange={e => setReplyText(e.target.value)} maxLength={500} placeholder="Votre réponse..." />
+                              <div className="flex gap-2">
+                                <Button size="sm" onClick={() => handleReplySubmit(comment.id)} disabled={replyLoading}>{replyLoading ? <Loader2 className="animate-spin h-4 w-4" /> : 'Répondre'}</Button>
+                                <Button size="sm" variant="outline" onClick={() => setReplyingId(null)} disabled={replyLoading}>Annuler</Button>
+                              </div>
+                            </div>
+                          )}
+                          {/* Affichage des réponses */}
+                          {repliesLoading === comment.id ? (
+                            <div className="text-xs text-muted-foreground mt-2">Chargement des réponses...</div>
+                          ) : replies[comment.id] && replies[comment.id].length > 0 && (
+                            <div className="mt-4 pl-6 border-l">
+                              {replies[comment.id].map((reply) => (
+                                <div key={reply.id} className="mb-2">
+                                  <div className="flex items-center gap-2 text-xs">
+                                    <span className="font-medium text-primary">{reply.user.email}</span>
+                                    <span className="text-muted-foreground">{formatDate(reply.createdAt)}</span>
+                                  </div>
+                                  <div className="text-muted-foreground text-sm">{reply.text}</div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
+          {/* Pagination */}
+          {pagination && (
+            <div className="flex justify-center items-center gap-4 mt-4">
+              <button
+                className="px-4 py-2 rounded-md border disabled:opacity-50"
+                onClick={() => setPage(page - 1)}
+                disabled={page <= 1}
+              >
+                Précédent
+              </button>
+              <span>Page {pagination.currentPage} / {pagination.totalPages}</span>
+              <button
+                className="px-4 py-2 rounded-md border disabled:opacity-50"
+                onClick={() => setPage(page + 1)}
+                disabled={!pagination.hasNext}
+              >
+                Suivant
+              </button>
             </div>
-          </ScrollArea>
+          )}
         </div>
         {/* Community Guidelines */}
         <Card className="bg-muted/50">

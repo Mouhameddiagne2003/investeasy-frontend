@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { TrendingUp, Mail, Lock, Eye, EyeOff } from "lucide-react";
 
 const Login = () => {
@@ -20,19 +20,11 @@ const Login = () => {
 
   const handleSubmit = async () => {
     if (!email || !password) {
-      toast({
-        title: "Champs requis",
-        description: "Veuillez remplir tous les champs",
-        variant: "destructive",
-      });
+      toast.error("Veuillez remplir tous les champs");
       return;
     }
     if (!email.includes("@")) {
-      toast({
-        title: "Email invalide",
-        description: "Veuillez entrer une adresse email valide",
-        variant: "destructive",
-      });
+      toast.error("Veuillez entrer une adresse email valide");
       return;
     }
     const success = await login(email, password);

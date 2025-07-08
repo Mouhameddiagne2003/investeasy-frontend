@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { UserRole } from "@/types/user";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -22,37 +22,26 @@ export default function AuthGuard({
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const { toast } = useToast();
+
+  const isPublicPage = pathname.startsWith("/login") || pathname.startsWith("/register") || pathname === "/";
 
   useEffect(() => {
     if (loading) return;
-    // Si la page doit être accessible uniquement si déconnecté (ex: login/register/landing)
-    if (blockIfAuthenticated && isAuthenticated) {
-      toast({
-        title: "Déjà connecté",
-        description: "Vous êtes déjà connecté(e)",
-        variant: "destructive",
-      });
+    // 1. Si la page doit être accessible uniquement si déconnecté (ex: login/register/landing)
+    if (blockIfAuthenticated && isAuthenticated && isPublicPage) {
+      toast.error("Vous êtes déjà connecté(e)");
       router.replace("/dashboard");
       return;
     }
-    // Si la page doit être accessible uniquement si connecté
+    // 2. Si la page doit être accessible uniquement si connecté
     if (requireAuth && !isAuthenticated) {
-      toast({
-        title: "Connexion requise",
-        description: "Vous devez être connecté(e) pour accéder à cette page",
-        variant: "destructive",
-      });
+      toast.error("Vous devez être connecté(e) pour accéder à cette page");
       router.replace("/login");
       return;
     }
-    // Si la page doit être accessible uniquement si admin
+    // 3. Si la page doit être accessible uniquement si admin
     if (requireAdmin && user?.role !== UserRole.ADMIN) {
-      toast({
-        title: "Accès refusé",
-        description: "Vous n'avez pas les droits pour accéder à cette page",
-        variant: "destructive",
-      });
+      toast.error("Vous n'avez pas les droits pour accéder à cette page");
       router.replace("/dashboard");
       return;
     }

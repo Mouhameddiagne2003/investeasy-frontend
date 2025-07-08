@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { User, UserRole } from "@/types/user";
 
 
@@ -58,22 +58,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Login failed');
       }
       const data = await res.json();
+      console.log(data.user);
       // data doit contenir { user, token }
       localStorage.setItem('investeasy-token', data.token);
       localStorage.setItem('investeasy-user', JSON.stringify(data.user));
-      setUser(data.user);
-      toast({
-        title: "Connexion réussie",
-        description: "Vous êtes maintenant connecté à InvestEasy",
+      setUser({
+        id: data.user.id,
+        email: data.user.email,
+        role: (data.user.role as string).toLowerCase() as UserRole,
+        avatar: data.user.avatar,
       });
+      toast.success("Vous êtes maintenant connecté à InvestEasy");
       return true;
     } catch (error) {
       console.error('Login error:', error);
-      toast({
-        title: "Erreur de connexion",
-        description: "Email ou mot de passe incorrect",
-        variant: "destructive",
-      });
+      toast.error("Email ou mot de passe incorrect");
       return false;
     } finally {
       setLoading(false);
@@ -98,18 +97,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('investeasy-token', data.token);
       localStorage.setItem('investeasy-user', JSON.stringify(data.user));
       setUser(data.user);
-      toast({
-        title: "Inscription réussie",
-        description: "Votre compte a été créé avec succès",
-      });
+      toast.success("Votre compte a été créé avec succès");
       return true;
     } catch (error) {
       console.error('Registration error:', error);
-      toast({
-        title: "Erreur d'inscription",
-        description: "Impossible de créer le compte",
-        variant: "destructive",
-      });
+      toast.error("Impossible de créer le compte");
       return false;
     } finally {
       setLoading(false);
@@ -120,10 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('investeasy-token');
     localStorage.removeItem('investeasy-user');
     setUser(null);
-    toast({
-      title: "Déconnexion",
-      description: "Vous avez été déconnecté avec succès",
-    });
+    toast.success("Vous avez été déconnecté avec succès");
   };
 
   const value = {

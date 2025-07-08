@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/context/AuthContext";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { TrendingUp, Mail, Lock, Eye, EyeOff, UserPlus } from "lucide-react";
 
 const Register = () => {
@@ -24,43 +24,23 @@ const Register = () => {
 
   const handleSubmit = async () => {
     if (!email || !password || !confirmPassword) {
-      toast({
-        title: "Champs requis",
-        description: "Veuillez remplir tous les champs",
-        variant: "destructive",
-      });
+      toast.error("Veuillez remplir tous les champs");
       return;
     }
     if (!email.includes("@")) {
-      toast({
-        title: "Email invalide",
-        description: "Veuillez entrer une adresse email valide",
-        variant: "destructive",
-      });
+      toast.error("Veuillez entrer une adresse email valide");
       return;
     }
     if (password.length < 6) {
-      toast({
-        title: "Mot de passe trop court",
-        description: "Le mot de passe doit contenir au moins 6 caractères",
-        variant: "destructive",
-      });
+      toast.error("Le mot de passe doit contenir au moins 6 caractères");
       return;
     }
     if (password !== confirmPassword) {
-      toast({
-        title: "Mots de passe différents",
-        description: "Les mots de passe ne correspondent pas",
-        variant: "destructive",
-      });
+      toast.error("Les mots de passe ne correspondent pas");
       return;
     }
     if (!acceptTerms) {
-      toast({
-        title: "Conditions requises",
-        description: "Veuillez accepter les conditions d'utilisation",
-        variant: "destructive",
-      });
+      toast.error("Veuillez accepter les conditions d'utilisation");
       return;
     }
     const success = await register(email, password);

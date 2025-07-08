@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { TrendingUp, Target, Shield, DollarSign, AlertCircle } from "lucide-react";
 
 const Recommendations = () => {
@@ -52,11 +52,7 @@ const Recommendations = () => {
 
   const handleSubmit = async () => {
     if (!formData.budget || !formData.goal || !formData.risk) {
-      toast({
-        title: "Formulaire incomplet",
-        description: "Veuillez remplir tous les champs",
-        variant: "destructive",
-      });
+      toast.error("Veuillez remplir tous les champs");
       return;
     }
     setLoading(true);
@@ -98,16 +94,9 @@ const Recommendations = () => {
         goal: formData.goal,
         riskProfile: formData.risk
       });
-      toast({
-        title: "Recommandation générée",
-        description: "Votre analyse personnalisée est prête",
-      });
+      toast.success("Votre analyse personnalisée est prête");
     } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de générer la recommandation",
-        variant: "destructive",
-      });
+      toast.error("Impossible de générer la recommandation");
     } finally {
       setLoading(false);
     }
