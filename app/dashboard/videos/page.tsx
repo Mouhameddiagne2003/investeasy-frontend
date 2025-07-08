@@ -148,15 +148,14 @@ const Videos = () => {
             {videos.map((video) => (
               <Card key={video.id} className="group hover:shadow-xl transition-all duration-300 overflow-hidden">
                 <div className="relative">
-                  <div className="aspect-video bg-muted rounded-t-lg overflow-hidden">
-                    <iframe
-                      src={video.url?.includes('youtube.com') ? video.url.replace('/watch?v=', '/embed/') : video.url}
-                      title={video.title}
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
+                  <div className="aspect-video bg-muted rounded-t-lg overflow-hidden flex items-center justify-center">
+                    <video
+                      src={video.url}
+                      controls
                       className="w-full h-full"
-                    />
+                    >
+                      Votre navigateur ne supporte pas la lecture vidéo.
+                    </video>
                   </div>
                   <div className="absolute top-4 left-4">
                     <Badge className={getLevelColor(video.category || video.level)}>
@@ -242,15 +241,14 @@ const Videos = () => {
         <DialogContent className="max-w-3xl w-full p-0 overflow-hidden">
           {selectedVideo && (
             <div className="flex flex-col md:flex-row">
-              <div className="flex-1 bg-black aspect-video relative">
-                <iframe
-                  src={selectedVideo.url?.includes('youtube.com') ? selectedVideo.url.replace('/watch?v=', '/embed/') : selectedVideo.url}
-                  title={selectedVideo.title}
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
+              <div className="flex-1 bg-black aspect-video relative flex items-center justify-center">
+                <video
+                  src={selectedVideo.url}
+                  controls
                   className="w-full h-full min-h-[240px] md:min-h-[360px]"
-                />
+                >
+                  Votre navigateur ne supporte pas la lecture vidéo.
+                </video>
               </div>
               <div className="flex-1 p-6 flex flex-col gap-4 min-w-[280px]">
                 <DialogHeader>
