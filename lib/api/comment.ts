@@ -1,6 +1,6 @@
 // Fonctions d'appel API pour les commentaires
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://investeasy-backend.onrender.com/api';
 
 export async function getComments(
   { page = 1, limit = 20, videoId = null }: { page?: number; limit?: number; videoId?: string | null } = {},

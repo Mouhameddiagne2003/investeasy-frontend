@@ -2,7 +2,7 @@
 
 import { mockVideos } from "./mock-videos";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://investeasy-backend.onrender.com/api';
 
 export async function getVideos(
   { page = 1, limit = 10, category = '', search = '', sort = 'newest' } = {}, token?: string

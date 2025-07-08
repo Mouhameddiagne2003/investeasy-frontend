@@ -44,7 +44,7 @@ const AdminSettings = () => {
   });
 
   const [apiSettings, setApiSettings] = useState({
-    apiBaseUrl: 'http://localhost:8080/api',
+    apiBaseUrl: 'https://investeasy-backend.onrender.com/api',
     apiTimeout: '10000',
     rateLimitEnabled: true,
     maxRequestsPerMinute: '60'

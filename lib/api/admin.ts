@@ -1,6 +1,6 @@
 // Fonctions d'appel API pour la gestion admin (users, vidéos)
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://investeasy-backend.onrender.com/api';
 
 import { mockUsers } from "./mock-users";
 import { mockVideos } from "./mock-videos";

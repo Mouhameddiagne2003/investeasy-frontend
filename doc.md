@@ -15,7 +15,7 @@
 
 ## Vue d'ensemble
 
-**Base URL:** `http://localhost:8080/api`
+**Base URL:** `https://investeasy-backend.onrender.com/api`
 
 **Format de réponse:** JSON
 **Authentification:** Bearer Token (JWT)
