@@ -47,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/login`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -82,7 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/register`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
