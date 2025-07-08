@@ -47,22 +47,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
     try {
-      // Mock API call - replace with actual API integration
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // For demo purposes, accept any email/password combination
-      const mockUser: User = { id: '1', email , role: UserRole.ADMIN};
-      const mockToken = 'mock-jwt-token-' + Date.now();
-      
-      localStorage.setItem('investeasy-token', mockToken);
-      localStorage.setItem('investeasy-user', JSON.stringify(mockUser));
-      setUser(mockUser);
-      
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) {
+        throw new Error('Login failed');
+      }
+      const data = await res.json();
+      // data doit contenir { user, token }
+      localStorage.setItem('investeasy-token', data.token);
+      localStorage.setItem('investeasy-user', JSON.stringify(data.user));
+      setUser(data.user);
       toast({
         title: "Connexion réussie",
         description: "Vous êtes maintenant connecté à InvestEasy",
       });
-      
       return true;
     } catch (error) {
       console.error('Login error:', error);
@@ -80,21 +83,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
     try {
-      // Mock API call - replace with actual API integration
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockUser: User = { id: '1', email , role: UserRole.USER};
-      const mockToken = 'mock-jwt-token-' + Date.now();
-      
-      localStorage.setItem('investeasy-token', mockToken);
-      localStorage.setItem('investeasy-user', JSON.stringify(mockUser));
-      setUser(mockUser);
-      
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) {
+        throw new Error('Registration failed');
+      }
+      const data = await res.json();
+      // data doit contenir { user, token }
+      localStorage.setItem('investeasy-token', data.token);
+      localStorage.setItem('investeasy-user', JSON.stringify(data.user));
+      setUser(data.user);
       toast({
         title: "Inscription réussie",
         description: "Votre compte a été créé avec succès",
       });
-      
       return true;
     } catch (error) {
       console.error('Registration error:', error);

@@ -1,10 +1,13 @@
 import { Navbar } from "@/components/navbar";
+import AuthGuard from "@/components/AuthGuard";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Navbar />
-      {children}
+      <AuthGuard blockIfAuthenticated>
+        {children}
+      </AuthGuard>
     </>
   );
 }
