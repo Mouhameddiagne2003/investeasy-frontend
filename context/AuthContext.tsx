@@ -2,11 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from "@/hooks/use-toast";
+import { User, UserRole } from "@/types/user";
 
-interface User {
-  id: string;
-  email: string;
-}
 
 interface AuthContextType {
   user: User | null;
@@ -54,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // For demo purposes, accept any email/password combination
-      const mockUser = { id: '1', email };
+      const mockUser: User = { id: '1', email , role: UserRole.ADMIN};
       const mockToken = 'mock-jwt-token-' + Date.now();
       
       localStorage.setItem('investeasy-token', mockToken);
@@ -86,7 +83,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Mock API call - replace with actual API integration
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      const mockUser = { id: '1', email };
+      const mockUser: User = { id: '1', email , role: UserRole.USER};
       const mockToken = 'mock-jwt-token-' + Date.now();
       
       localStorage.setItem('investeasy-token', mockToken);

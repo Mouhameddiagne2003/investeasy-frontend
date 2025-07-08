@@ -18,10 +18,10 @@ import {
   IconSettings,
   IconUsers,
 } from "@tabler/icons-react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { menuConfig } from "./menu-config"
 
-import { NavDocuments } from "@/components/nav-documents"
-import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
@@ -32,130 +32,31 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { adminMenuItems, publicMenuItems, menuSections } from "./menu-config"
 import { useAuth } from "@/context/AuthContext"
-
-const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "#",
-      icon: IconDashboard,
-    },
-    {
-      title: "Lifecycle",
-      url: "#",
-      icon: IconListDetails,
-    },
-    {
-      title: "Analytics",
-      url: "#",
-      icon: IconChartBar,
-    },
-    {
-      title: "Projects",
-      url: "#",
-      icon: IconFolder,
-    },
-    {
-      title: "Team",
-      url: "#",
-      icon: IconUsers,
-    },
-  ],
-  navClouds: [
-    {
-      title: "Capture",
-      icon: IconCamera,
-      isActive: true,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Proposal",
-      icon: IconFileDescription,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Prompts",
-      icon: IconFileAi,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Settings",
-      url: "#",
-      icon: IconSettings,
-    },
-    {
-      title: "Get Help",
-      url: "#",
-      icon: IconHelp,
-    },
-    {
-      title: "Search",
-      url: "#",
-      icon: IconSearch,
-    },
-  ],
-  documents: [
-    {
-      name: "Data Library",
-      url: "#",
-      icon: IconDatabase,
-    },
-    {
-      name: "Reports",
-      url: "#",
-      icon: IconReport,
-    },
-    {
-      name: "Word Assistant",
-      url: "#",
-      icon: IconFileWord,
-    },
-  ],
-}
+import { UserRole } from "@/types/user"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user } = useAuth();
+  const pathname = usePathname();
   // Démo : on considère qu'un email se terminant par 'admin' est admin
-  const isAdmin = user && user.email && user.email.endsWith("admin");
+  const isAdmin = user?.role === UserRole.ADMIN;
+
+  // Adapt user for NavUser
+  const navUser = user
+    ? {
+        id: user.id,
+        role: user.role,
+        name: user.email.split("@")[0],
+        email: user.email,
+        avatar: user.avatar || '/avatars/default.png', // fallback to default if not found
+      }
+    : {
+        id: "",
+        role: UserRole.USER,
+        name: "Invité",
+        email: "",
+        avatar: "/avatars/default.png",
+      };
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -166,16 +67,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <a href="#">
+              <Link href="#">
                 <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
-              </a>
+                <span className="text-base font-semibold">InvestEasy</span>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        {menuSections.map((section) => {
+        {menuConfig.map((section) => {
           if (section.adminOnly && !isAdmin) return null;
           return (
             <div key={section.section} className="mb-4">
@@ -183,19 +84,27 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 {section.section}
               </div>
               <ul>
-                {section.items.map((item) => (
-                  <li key={item.path} className="flex items-center gap-2 py-2 px-4">
-                    {item.icon && <item.icon className="w-5 h-5" />}
-                    <a href={item.path}>{item.title}</a>
-                  </li>
-                ))}
+                {section.items.map((item) => {
+                  const isActive = pathname === item.path;
+                  return (
+                    <li key={item.path}>
+                      <Link
+                        href={item.path}
+                        className={`flex items-center gap-2 py-2 px-4 rounded transition-colors w-full ${isActive ? 'bg-primary/10 text-primary font-semibold' : 'hover:bg-muted'}`}
+                      >
+                        {item.icon && <item.icon className="w-5 h-5" />}
+                        {item.title}
+                      </Link>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           );
         })}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={navUser} />
       </SidebarFooter>
     </Sidebar>
   )

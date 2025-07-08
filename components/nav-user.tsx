@@ -1,10 +1,11 @@
 "use client"
 
 import {
-  IconCreditCard,
+  IconDeviceFloppy,
   IconDotsVertical,
   IconLogout,
-  IconNotification,
+  IconMoon,
+  IconSun,
   IconUserCircle,
 } from "@tabler/icons-react"
 
@@ -28,17 +29,36 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { useTheme } from "next-themes"
+import { useAuth } from "@/context/AuthContext"
+import { useRouter } from "next/navigation"
+import { User } from "@/types/user"
 
 export function NavUser({
   user,
 }: {
-  user: {
-    name: string
-    email: string
-    avatar: string
-  }
+  user: User
 }) {
   const { isMobile } = useSidebar()
+  const { setTheme } = useTheme()
+  const { logout } = useAuth()
+  const router = useRouter()
+
+  const handleLogout = () => {
+    logout()
+    router.push("/login")
+  }
+
+  const getInitials = (email: string) => {
+    const namePart = email.split("@")[0];
+    if (namePart.length >= 2) {
+      return namePart.charAt(0) + namePart.charAt(1);
+    } else if (namePart.length === 1) {
+      return namePart.charAt(0);
+    } else {
+      return "";
+    }
+  }
 
   return (
     <SidebarMenu>
@@ -50,11 +70,11 @@ export function NavUser({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg grayscale">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                <AvatarImage src={user.avatar} alt={getInitials(user.email)} />
+                <AvatarFallback className="rounded-lg">{getInitials(user.email)}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
+                <span className="truncate font-medium">{user.email.split("@")[0]}</span>
                 <span className="text-muted-foreground truncate text-xs">
                   {user.email}
                 </span>
@@ -71,11 +91,11 @@ export function NavUser({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarImage src={user.avatar} alt={getInitials(user.email)} />
+                  <AvatarFallback className="rounded-lg">{getInitials(user.email)}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
+                  <span className="truncate font-medium">{user.email.split("@")[0]}</span>
                   <span className="text-muted-foreground truncate text-xs">
                     {user.email}
                   </span>
@@ -84,23 +104,27 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {}}>
                 <IconUserCircle />
-                Account
+                Mon compte
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconCreditCard />
-                Billing
+              <DropdownMenuItem onClick={() => setTheme("dark") }>
+                <IconMoon />
+                Thème sombre
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconNotification />
-                Notifications
+              <DropdownMenuItem onClick={() => setTheme("light") }>
+                <IconSun />
+                Thème clair
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme("system") }>
+                <IconDeviceFloppy />
+                Thème système
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
               <IconLogout />
-              Log out
+              Se déconnecter
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
